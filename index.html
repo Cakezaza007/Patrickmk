@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกการกินอาหาร</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        #foodForm {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        #foodForm label {
+            font-size: 1.2rem;
+            color: #4a5568;
+        }
+
+        #foodForm input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 1rem;
+            color: #4a5568;
+        }
+
+        #foodForm button {
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        #foodForm button:hover {
+            background-color: #2b6cb0;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 30px;
+            color: #2d3748;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #4a5568;
+        }
+
+        #myChart {
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>บันทึกการกินอาหาร</h1>
+
+        <!-- ฟอร์มสำหรับกรอกชื่ออาหารและจำนวนทัพพี -->
+        <form id="foodForm">
+            <label for="foodName">ชื่ออาหาร: </label>
+            <input type="text" id="foodName" required placeholder="กรุณากรอกชื่ออาหาร">
+            
+            <label for="quantity">จำนวนทัพพี: </label>
+            <input type="number" id="quantity" required min="1" placeholder="กรุณากรอกจำนวนทัพพี">
+            
+            <button type="submit">คำนวณ</button>
+        </form>
+
+        <!-- ผลลัพธ์ -->
+        <div class="result-container">
+            <h2>ผลลัพธ์:</h2>
+            <p>แคลอรี่: <span id="calories">0</span> kcal</p>
+            <p>คาร์โบไฮเดรต: <span id="carbs">0</span> g</p>
+        </div>
+
+        <!-- แสดงกราฟ -->
+        <canvas id="myChart" width="400" height="200"></canvas>
+    </div>
+
+    <script>
+        // ข้อมูลอาหารที่มีแคลอรี่และคาร์โบไฮเดรตต่อ 100 กรัม
+        const foodDatabase = {
+            "ข้าว": { calories: 130, carbs: 28, gramsPerSpoon: 20 },
+            "ไข่": { calories: 68, carbs: 1.6, gramsPerSpoon: 50 },
+            "กล้วย": { calories: 89, carbs: 23, gramsPerSpoon: 100 },
+            "ส้ม": { calories: 47, carbs: 12, gramsPerSpoon: 200 },
+            "ไก่": { calories: 165, carbs: 0, gramsPerSpoon: 80 }
+        };
+
+        // ฟังก์ชั่นในการคำนวณแคลอรี่และคาร์โบไฮเดรตตามจำนวนทัพพี
+        function calculateNutrition(foodName, spoonQuantity) {
+            const food = foodDatabase[foodName];
+
+            if (food) {
+                const grams = food.gramsPerSpoon * spoonQuantity;  // คำนวณกรัมจากจำนวนทัพพี
+                const calories = (food.calories * grams) / 100;  // คำนวณแคลอรี่
+                const carbs = (food.carbs * grams) / 100;  // คำนวณคาร์โบไฮเดรต
+                return { calories, carbs };
+            } else {
+                return { calories: 0, carbs: 0 };
+            }
+        }
+
+        // ฟังก์ชั่นสำหรับแสดงผลข้อมูลในกราฟ
+        function updateChart(foodName, calories, carbs) {
+            const labels = [foodName];
+            const dataCalories = [calories];
+            const dataCarbs = [carbs];
+
+            const data = {
+                labels: labels,
+                datasets: [{
+                    label: 'แคลอรี่',
+                    data: dataCalories,
+                    borderColor: 'red',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true
+                }, {
+                    label: 'คาร์โบไฮเดรต',
+                    data: dataCarbs,
+                    borderColor: 'blue',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true
+                }]
+            };
+
+            const config = {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    },
+                },
+            };
+
+            // ลบกราฟเก่าออกก่อนสร้างกราฟใหม่
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+
+            // สร้างกราฟใหม่
+            window.myChart = new Chart(ctx, config);
+        }
+
+        // เมื่อกรอกข้อมูลและกดคำนวณ
+        document.getElementById('foodForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const foodName = document.getElementById('foodName').value.trim();
+            const spoonQuantity = document.getElementById('quantity').value;
+
+            // คำนวณแคลอรี่และคาร์โบไฮเดรต
+            const { calories, carbs } = calculateNutrition(foodName, spoonQuantity);
+
+            // แสดงผล
+            document.getElementById('calories').innerText = calories.toFixed(2);
+            document.getElementById('carbs').innerText = carbs.toFixed(2);
+
+            // อัพเดตกราฟ
+            updateChart(foodName, calories, carbs);
+        });
+    </script>
+</body>
+</html>
